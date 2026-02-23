@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Image upload service (API Gateway + Lambda + S3 + DynamoDB) for LocalStack dev.
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 20
+    MemorySize: 256
+    Environment:
+      Variables:
+        AWS_REGION: us-east-1
+        BUCKET_NAME: images-bucket
+        TABLE_NAME: images-metadata
+        LOCALSTACK_ENDPOINT: http://host.docker.internal:4566
+
+Resources:
+  ImageApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+
+  UploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers.upload_image
+      CodeUri: .
+      Events:
+        Upload:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ImageApi
+            Path: /images
+            Method: POST
+
+  ListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers.list_images
+      CodeUri: .
+      Events:
+        List:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ImageApi
+            Path: /images
+            Method: GET
+
+  ViewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers.view_image
+      CodeUri: .
+      Events:
+        View:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ImageApi
+            Path: /images/{image_id}
+            Method: GET
+
+  DeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers.delete_image
+      CodeUri: .
+      Events:
+        Delete:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ImageApi
+            Path: /images/{image_id}
+            Method: DELETE
